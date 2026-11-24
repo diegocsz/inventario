@@ -77,8 +77,8 @@ El destino es Android. Introduce las credenciales publicas antes de ejecutar.
 
 El stock inicial solo se registra al crear el producto. Los cambios posteriores deben hacerse desde Movimientos para conservar la trazabilidad. La RPC actualiza stock e inserta el movimiento en una sola transaccion.
 
-## 9. Imagenes locales
-`LocalImageStorage` usa `image_picker` y `path_provider`. Copia una imagen seleccionada a `product_images/` dentro del almacenamiento privado y guarda solo una referencia relativa en `imagen_local_path`. No sincroniza fotos entre dispositivos ni usa Supabase Storage.
+## 9. Espacio reservado para imagenes
+Las tarjetas de productos mantienen un area visual reservada separada del contenido. Esta area permanece vacia en esta version y no usa base de datos, almacenamiento local, Supabase Storage, iconos ni placeholders. Se preparara para una futura incorporacion sin redisenar las tarjetas.
 
 ## 10. Verificacion
 ```sql

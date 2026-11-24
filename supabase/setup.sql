@@ -32,7 +32,6 @@ create table if not exists public.productos (
   precio numeric(12,2),
   stock integer not null default 0 check (stock >= 0),
   stock_minimo integer not null default 0 check (stock_minimo >= 0),
-  imagen_local_path text,
   activo boolean not null default true,
   creado_por uuid not null references auth.users(id),
   creado_en timestamptz not null default now(),

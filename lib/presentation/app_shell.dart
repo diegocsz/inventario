@@ -1,10 +1,7 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 
 import '../controllers/inventory_controller.dart';
 import '../models/models.dart';
-import '../services/local_image_storage.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key, required this.controller});
@@ -339,7 +336,7 @@ class ProductCard extends StatelessWidget {
             flex: 5,
             child: SizedBox(
               width: double.infinity,
-              child: LocalProductImage(path: product.imagenLocalPath),
+              child: const _ReservedProductImageArea(),
             ),
           ),
           Expanded(
@@ -429,36 +426,12 @@ class ProductCard extends StatelessWidget {
   }
 }
 
-class LocalProductImage extends StatelessWidget {
-  const LocalProductImage({super.key, required this.path});
-  final String? path;
+class _ReservedProductImageArea extends StatelessWidget {
+  const _ReservedProductImageArea();
+
   @override
   Widget build(BuildContext context) {
-    if (path == null)
-      return const ColoredBox(
-        color: Color(0xffedf8ef),
-        child: Center(child: Icon(Icons.inventory_2_outlined, size: 42)),
-      );
-    return FutureBuilder<File?>(
-      future: LocalImageStorage().resolve(path),
-      builder: (_, snapshot) {
-        final file = snapshot.data;
-        if (snapshot.connectionState == ConnectionState.done && file != null) {
-          return Image.file(
-            file,
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => const ColoredBox(
-              color: Color(0xffedf8ef),
-              child: Center(child: Icon(Icons.broken_image_outlined)),
-            ),
-          );
-        }
-        return const ColoredBox(
-          color: Color(0xffedf8ef),
-          child: Center(child: Icon(Icons.inventory_2_outlined, size: 42)),
-        );
-      },
-    );
+    return const ColoredBox(color: Color(0xffedf8ef));
   }
 }
 
@@ -721,10 +694,7 @@ class _ProductFormState extends State<ProductForm> {
   final price = TextEditingController();
   final stock = TextEditingController(text: '0');
   final minimum = TextEditingController(text: '0');
-  final images = LocalImageStorage();
   String? categoryId;
-  String? imagePath;
-  File? imageFile;
   bool saving = false;
 
   @override
@@ -740,11 +710,6 @@ class _ProductFormState extends State<ProductForm> {
       stock.text = p.stock.toString();
       minimum.text = p.stockMinimo.toString();
       categoryId = p.categoriaId;
-      imagePath = p.imagenLocalPath;
-      if (imagePath != null)
-        images.resolve(imagePath).then((file) {
-          if (mounted) setState(() => imageFile = file);
-        });
     }
   }
 
@@ -760,21 +725,6 @@ class _ProductFormState extends State<ProductForm> {
     super.dispose();
   }
 
-  Future<void> pickImage() async {
-    try {
-      final file = await images.pickAndSave();
-      if (file != null)
-        setState(() {
-          imageFile = file;
-          imagePath = null;
-        });
-    } catch (e) {
-      if (mounted)
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(e.toString())));
-    }
-  }
-
   Future<void> save() async {
     if (!formKey.currentState!.validate()) return;
     if (categoryId == null) {
@@ -784,8 +734,6 @@ class _ProductFormState extends State<ProductForm> {
       return;
     }
     setState(() => saving = true);
-    String? savedPath = imagePath;
-    if (imageFile != null) savedPath = await images.saveReference(imageFile!);
     final data = <String, dynamic>{
       'categoria_id': categoryId,
       'codigo': code.text.trim().isEmpty ? null : code.text.trim(),
@@ -798,7 +746,6 @@ class _ProductFormState extends State<ProductForm> {
           ? null
           : double.tryParse(price.text.trim()),
       'stock_minimo': int.tryParse(minimum.text) ?? 0,
-      'imagen_local_path': savedPath,
     };
     if (widget.product == null) data['stock'] = int.tryParse(stock.text) ?? 0;
     final error = widget.product == null
@@ -837,43 +784,6 @@ class _ProductFormState extends State<ProductForm> {
                       ?.copyWith(fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 16),
-                Center(
-                  child: Container(
-                    width: 180,
-                    height: 140,
-                    clipBehavior: Clip.antiAlias,
-                    decoration: BoxDecoration(
-                      color: Colors.green.shade50,
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: imageFile != null
-                        ? Image.file(imageFile!, fit: BoxFit.cover)
-                        : const Icon(Icons.inventory_2_outlined, size: 48),
-                  ),
-                ),
-                Center(
-                  child: Wrap(
-                    children: [
-                      TextButton.icon(
-                        onPressed: pickImage,
-                        icon: const Icon(Icons.photo_camera),
-                        label: const Text('Seleccionar fotografía'),
-                      ),
-                      if (imageFile != null || imagePath != null)
-                        TextButton.icon(
-                          onPressed: () {
-                            if (imagePath != null) images.delete(imagePath);
-                            setState(() {
-                              imageFile = null;
-                              imagePath = null;
-                            });
-                          },
-                          icon: const Icon(Icons.delete_outline),
-                          label: const Text('Quitar'),
-                        ),
-                    ],
-                  ),
-                ),
                 TextFormField(
                   controller: name,
                   decoration: const InputDecoration(labelText: 'Nombre'),

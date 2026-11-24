@@ -51,7 +51,6 @@ class Producto {
     this.precio,
     required this.stock,
     required this.stockMinimo,
-    this.imagenLocalPath,
     required this.activo,
   });
   final String id;
@@ -63,7 +62,6 @@ class Producto {
   final double? precio;
   final int stock;
   final int stockMinimo;
-  final String? imagenLocalPath;
   final bool activo;
   String get estado {
     if (stock == 0 || stock <= 0) return 'CRITICO';
@@ -83,7 +81,6 @@ class Producto {
         : double.tryParse(map['precio'].toString()),
     stock: (map['stock'] as num).toInt(),
     stockMinimo: (map['stock_minimo'] as num).toInt(),
-    imagenLocalPath: map['imagen_local_path'] as String?,
     activo: map['activo'] == true,
   );
 }
