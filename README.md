@@ -1,17 +1,15 @@
-# inventario
+# Verde Stock
 
-A new Flutter project.
+Aplicacion movil Android de gestion de inventario con Supabase, autenticacion, RLS y movimientos atomicos.
 
-## Getting Started
+1. Introduce la URL HTTPS y la clave publicable en `lib/core/supabase_config.dart`.
+2. Ejecuta `supabase/setup.sql` en el SQL Editor de Supabase.
+3. Crea manualmente los tres usuarios en Supabase Authentication.
+4. Ejecuta:
 
-This project is a starting point for a Flutter application.
+```powershell
+flutter pub get
+flutter run
+```
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Consulta `GUIA_SUPABASE_FLUTTER.md` para la configuracion completa.
