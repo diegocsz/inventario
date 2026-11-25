@@ -29,8 +29,13 @@ class InventoryController extends ChangeNotifier {
   StreamSubscription<AuthState>? _authSubscription;
 
   void listenAuth() {
-    _authSubscription ??= auth.authChanges.listen((_) async {
-      if (auth.currentUser == null) {
+    _authSubscription ??= auth.authChanges.listen((_) {
+      final user = auth.currentUser;
+      if (user == null) {
+        perfil = null;
+        clear();
+        notifyListeners();
+      } else if (perfil?.id != user.id) {
         perfil = null;
         clear();
         notifyListeners();
@@ -47,7 +52,6 @@ class InventoryController extends ChangeNotifier {
   Future<bool> loadProfile() async {
     loading = true;
     error = null;
-    notifyListeners();
     try {
       perfil = await perfiles.getCurrent();
       if (perfil == null) {

@@ -182,3 +182,58 @@ end $$;
 
 revoke all on function public.registrar_movimiento(uuid,text,integer,text) from public;
 grant execute on function public.registrar_movimiento(uuid,text,integer,text) to authenticated;
+
+update auth.users
+set raw_user_meta_data = coalesce(raw_user_meta_data, '{}'::jsonb)
+  || '{"nombres":"Diego","apellidos":"Salcedo","rol":"admin"}'::jsonb
+where id = 'd5efdaac-76aa-4dbd-8ee5-cc115e7ccdbf';
+
+update public.perfiles
+set nombres = 'Diego',
+    apellidos = 'Salcedo',
+    rol = 'admin',
+    activo = true
+where id = 'd5efdaac-76aa-4dbd-8ee5-cc115e7ccdbf';
+
+select id, nombres, apellidos, rol, activo
+from public.perfiles
+where id = 'd5efdaac-76aa-4dbd-8ee5-cc115e7ccdbf';
+
+-- Plantilla para asignar nombre, apellido y rol a usuarios ya creados en
+-- Authentication > Users. Reemplaza los correos y datos de ejemplo antes de
+-- ejecutar; puedes agregar o quitar filas según los usuarios que necesites.
+-- Roles permitidos: admin, editor, viewer.
+/*
+with usuarios_configurados(email, nombres, apellidos, rol) as (
+  values
+    ('usuario2@ejemplo.com', 'Nombre', 'Apellido', 'editor'),
+    ('usuario3@ejemplo.com', 'Nombre', 'Apellido', 'viewer')
+),
+usuarios_actualizados as (
+  update auth.users u
+  set raw_user_meta_data = coalesce(u.raw_user_meta_data, '{}'::jsonb)
+    || jsonb_build_object(
+      'nombres', c.nombres,
+      'apellidos', c.apellidos,
+      'rol', c.rol
+    )
+  from usuarios_configurados c
+  where lower(u.email) = lower(c.email)
+    and c.rol in ('admin', 'editor', 'viewer')
+  returning u.id
+),
+perfiles_actualizados as (
+  insert into public.perfiles (id, nombres, apellidos, rol, activo)
+  select u.id, c.nombres, c.apellidos, c.rol, true
+  from usuarios_actualizados u
+  join auth.users a on a.id = u.id
+  join usuarios_configurados c on lower(c.email) = lower(a.email)
+  on conflict (id) do update
+  set nombres = excluded.nombres,
+      apellidos = excluded.apellidos,
+      rol = excluded.rol,
+      activo = true
+  returning id, nombres, apellidos, rol, activo
+)
+select * from perfiles_actualizados;
+*/

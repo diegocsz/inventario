@@ -111,36 +111,67 @@ class HomePage extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 18),
-          Text(
-            'Últimos movimientos',
-            style: Theme.of(context).textTheme.titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          if (c.listaMovimientos.isEmpty)
-            const Card(child: ListTile(title: Text('Aún no hay movimientos')))
+          if (c.listaProductos.isEmpty)
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(child: Text('No hay productos')),
+              ),
+            )
           else
-            ...c.listaMovimientos
-                .take(5)
-                .map(
-                  (m) => Card(
-                    child: ListTile(
-                      leading: Icon(
-                        m.tipo == 'ENTRADA'
-                            ? Icons.add_circle
-                            : Icons.remove_circle,
-                        color: m.tipo == 'ENTRADA' ? Colors.green : Colors.red,
-                      ),
-                      title: Text('${m.tipo} · ${m.cantidad} unidades'),
-                      subtitle: Text(m.motivo ?? 'Sin motivo'),
-                      trailing: Text(
-                        '${m.stockAnterior} → ${m.stockResultante}',
-                      ),
-                    ),
-                  ),
-                ),
+            ..._productSections(context, c, showActions: false),
         ],
       ),
     );
+  }
+
+  List<Widget> _productSections(
+    BuildContext context,
+    InventoryController c, {
+    required bool showActions,
+  }) {
+    final sections = [
+      ('CRITICO', 'Crítico', Icons.warning_amber, Colors.red),
+      ('BAJO', 'Stock Bajo', Icons.priority_high, Colors.orange),
+      ('NORMAL', 'Normal', Icons.check_circle, Colors.green),
+    ];
+    final products = [
+      ...c.listaProductos,
+    ]..sort((a, b) => a.nombre.toLowerCase().compareTo(b.nombre.toLowerCase()));
+    return [
+      for (final (status, title, icon, color) in sections)
+        if (products.any((product) => product.estado == status)) ...[
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              children: [
+                Icon(icon, size: 20, color: color),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w800, color: color),
+                ),
+              ],
+            ),
+          ),
+          for (final product in products.where(
+            (product) => product.estado == status,
+          ))
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: ProductCard(
+                c: c,
+                product: product,
+                categoryName: c.listaCategorias
+                    .where((category) => category.id == product.categoriaId)
+                    .firstOrNull
+                    ?.nombre,
+                showActions: showActions,
+              ),
+            ),
+        ],
+    ];
   }
 
   Widget metric(String title, int value, IconData icon, Color color) => Card(
@@ -258,21 +289,18 @@ class _ProductsPageState extends State<ProductsPage> {
           else
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-              sliver: SliverGrid.builder(
+              sliver: SliverList.builder(
                 itemCount: products.length,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 0.68,
-                ),
-                itemBuilder: (_, i) => ProductCard(
-                  c: widget.c,
-                  product: products[i],
-                  categoryName: widget.c.listaCategorias
-                      .where((x) => x.id == products[i].categoriaId)
-                      .firstOrNull
-                      ?.nombre,
+                itemBuilder: (_, i) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: ProductCard(
+                    c: widget.c,
+                    product: products[i],
+                    categoryName: widget.c.listaCategorias
+                        .where((x) => x.id == products[i].categoriaId)
+                        .firstOrNull
+                        ?.nombre,
+                  ),
                 ),
               ),
             ),
@@ -297,10 +325,12 @@ class ProductCard extends StatelessWidget {
     required this.c,
     required this.product,
     this.categoryName,
+    this.showActions = true,
   });
   final InventoryController c;
   final Producto product;
   final String? categoryName;
+  final bool showActions;
 
   @override
   Widget build(BuildContext context) {
@@ -329,80 +359,85 @@ class ProductCard extends StatelessWidget {
     return Card(
       clipBehavior: Clip.antiAlias,
       color: background,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            flex: 5,
-            child: SizedBox(
-              width: double.infinity,
-              child: const _ReservedProductImageArea(),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const SizedBox(
+              width: 56,
+              height: 56,
+              child: _ReservedProductImageArea(),
             ),
-          ),
-          Expanded(
-            flex: 7,
-            child: Padding(
-              padding: const EdgeInsets.all(9),
+            const SizedBox(width: 14),
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     product.nombre,
-                    maxLines: 2,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.w800),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
+                  const SizedBox(height: 2),
                   Text(
-                    product.codigo ?? 'Sin código',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  Text(
-                    categoryName ?? 'Sin categoría',
+                    '${product.codigo ?? 'Sin código'} · ${categoryName ?? 'Sin categoría'}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
-                  const Spacer(),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
                       Icon(icon, size: 16, color: color),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          label,
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: color,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      const SizedBox(width: 5),
+                      Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: color,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ],
                   ),
-                  Text(
-                    '${product.stock} ${product.unidad} · Mín. ${product.stockMinimo}',
-                    style: const TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
+                  const SizedBox(height: 4),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 2,
                     children: [
-                      IconButton(
-                        onPressed: () => openMovement(context),
-                        icon: const Icon(Icons.swap_vert),
-                        tooltip: 'Movimiento',
+                      Text(
+                        'Disponible: ${product.stock} ${product.unidad}',
+                        style: const TextStyle(fontWeight: FontWeight.w700),
                       ),
-                      IconButton(
-                        onPressed: () => openEdit(context),
-                        icon: const Icon(Icons.edit_outlined),
-                        tooltip: 'Editar',
+                      Text(
+                        'Mínimo de alerta: ${product.stockMinimo}',
+                        style: Theme.of(context).textTheme.bodySmall
+                            ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                     ],
                   ),
                 ],
               ),
             ),
-          ),
-        ],
+            if (showActions && c.perfil?.puedeEditar == true)
+              PopupMenuButton<String>(
+                tooltip: 'Opciones del producto',
+                onSelected: (value) {
+                  if (value == 'edit') openEdit(context);
+                  if (value == 'movement') openMovement(context);
+                },
+                itemBuilder: (_) => const [
+                  PopupMenuItem(value: 'movement', child: Text('Registrar')),
+                  PopupMenuItem(value: 'edit', child: Text('Editar')),
+                ],
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -575,22 +610,12 @@ class MovementsPage extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         children: [
           Row(
-            children: [
-              const Expanded(
+            children: const [
+              Expanded(
                 child: Text(
                   'Movimientos',
                   style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800),
                 ),
-              ),
-              FilledButton.icon(
-                onPressed: () => showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  useSafeArea: true,
-                  builder: (_) => MovementForm(c: c),
-                ),
-                icon: const Icon(Icons.swap_vert),
-                label: const Text('Registrar'),
               ),
             ],
           ),
@@ -641,6 +666,10 @@ class ProfilePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = c.auth.currentUser;
+    final fullName = [
+      c.perfil?.nombres,
+      c.perfil?.apellidos,
+    ].where((name) => name != null && name.trim().isNotEmpty).join(' ');
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
@@ -652,8 +681,9 @@ class ProfilePage extends StatelessWidget {
         Card(
           child: ListTile(
             leading: const CircleAvatar(child: Icon(Icons.person)),
-            title: Text(user?.email ?? 'Usuario'),
-            subtitle: Text('Rol: ${c.perfil?.rol ?? ''}'),
+            title: Text(fullName.isEmpty ? user?.email ?? 'Usuario' : fullName),
+            subtitle: Text('${user?.email ?? ''}\nRol: ${c.perfil?.rol ?? ''}'),
+            isThreeLine: true,
           ),
         ),
         const SizedBox(height: 12),
@@ -979,20 +1009,29 @@ class _MovementFormState extends State<MovementForm> {
                       ?.copyWith(fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  initialValue: productId,
-                  decoration: const InputDecoration(labelText: 'Producto'),
-                  items: widget.c.listaProductos
-                      .map(
-                        (p) => DropdownMenuItem(
-                          value: p.id,
-                          child: Text(p.nombre),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (v) => setState(() => productId = v),
-                  validator: (v) => v == null ? 'Selecciona un producto' : null,
-                ),
+                if (widget.product == null)
+                  DropdownButtonFormField<String>(
+                    initialValue: productId,
+                    decoration: const InputDecoration(labelText: 'Producto'),
+                    items: widget.c.listaProductos
+                        .map(
+                          (p) => DropdownMenuItem(
+                            value: p.id,
+                            child: Text(p.nombre),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (v) => setState(() => productId = v),
+                    validator: (v) =>
+                        v == null ? 'Selecciona un producto' : null,
+                  )
+                else
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.inventory_2_outlined),
+                    title: Text(widget.product!.nombre),
+                    subtitle: const Text('Producto seleccionado'),
+                  ),
                 const SizedBox(height: 12),
                 SegmentedButton<String>(
                   segments: const [

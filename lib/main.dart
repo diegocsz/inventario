@@ -102,6 +102,8 @@ class AuthGate extends StatefulWidget {
 
 class _AuthGateState extends State<AuthGate> {
   late final InventoryController controller;
+  Future<bool>? _profileLoad;
+  String? _profileLoadUserId;
 
   @override
   void initState() {
@@ -126,11 +128,17 @@ class _AuthGateState extends State<AuthGate> {
   Widget build(BuildContext context) {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) {
+      _profileLoad = null;
+      _profileLoadUserId = null;
       return LoginPage(controller: controller);
     }
     if (controller.perfil == null) {
+      if (_profileLoadUserId != user.id) {
+        _profileLoadUserId = user.id;
+        _profileLoad = controller.loadProfile();
+      }
       return FutureBuilder<bool>(
-        future: controller.loadProfile(),
+        future: _profileLoad,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
             return const Scaffold(

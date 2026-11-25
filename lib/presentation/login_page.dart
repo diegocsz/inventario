@@ -84,7 +84,7 @@ class _LoginPageState extends State<LoginPage> {
                     const Icon(Icons.eco, size: 68, color: Color(0xFF2E7D32)),
                     const SizedBox(height: 12),
                     Text(
-                      'Verde Stock',
+                      'YW Santa Natura SMP Delivery',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.headlineMedium
                           ?.copyWith(fontWeight: FontWeight.w800),
